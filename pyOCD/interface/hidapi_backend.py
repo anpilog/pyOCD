@@ -78,7 +78,7 @@ class HidApiUSB(Interface):
             new_board.vid = deviceInfo['vendor_id']
             new_board.pid = deviceInfo['product_id']
             new_board.device = dev
-            dev.open(vid, pid)
+            #dev.open(vid, pid)
 
             boards.append(new_board)
 

@@ -269,18 +269,25 @@ class GDBServer(threading.Thread):
             
     def resume(self):
         self.ack()
-        self.target.resume()
         self.abstract_socket.setBlocking(0)
-        
+        bpSet=True
         # Try to set break point at hardfault handler to avoid
         # halting target constantly
-        if (self.target.availableBreakpoint() >= 1):
-            bpSet=True
-            hardfault_handler = self.target.readMemory(4*3)
-            self.target.setBreakpoint(hardfault_handler)
-        else:
-            bpSet=False
-            logging.info("No breakpoint available. Interfere target constantly.")
+#        logging.debug("3")
+#        if (self.target.availableBreakpoint() >= 1):
+#            logging.debug("4")
+#            bpSet=True
+#            logging.debug("5")
+#            hardfault_handler = self.target.readMemory(4*3)
+#            logging.debug("6")
+#            self.target.setBreakpoint(hardfault_handler)
+#            logging.debug("7")
+#        else:
+#            logging.debug("8")
+#            bpSet=False
+#            logging.info("No breakpoint available. Interfere target constantly.")
+# 
+        self.target.resume()
         
         val = ''
         
@@ -298,30 +305,33 @@ class GDBServer(threading.Thread):
                     break
             except:
                 pass
-            
-            if self.target.getState() == TARGET_HALTED:
-                logging.debug("state halted")
-                xpsr = self.target.readCoreRegister('xpsr')
-                # Get IPSR value from XPSR
-                if (xpsr & 0x1f) == 3:
-                    val = "S" + FAULT[3]
-                else:
-                    val = 'S05'
-                break
-            
-            if not bpSet:
-                # Only do this when no bp available as it slows resume operation
-                self.target.halt()
-                xpsr = self.target.readCoreRegister('xpsr')
-                logging.debug("GDB resume xpsr: 0x%X", xpsr)
-                # Get IPSR value from XPSR
-                if (xpsr & 0x1f) == 3:
-                    val = "S" + FAULT[3]
+            try:
+                if self.target.getState() == TARGET_HALTED:
+                    logging.debug("state halted")
+                    xpsr = self.target.readCoreRegister('xpsr')
+                    # Get IPSR value from XPSR
+                    if (xpsr & 0x1f) == 3:
+                        val = "S" + FAULT[3]
+                    else:
+                        val = 'S05'
                     break
-                self.target.resume()
+            except:
+                logging.debug("Exception")
+                pass
+            
+            #if not bpSet:
+            #    # Only do this when no bp available as it slows resume operation
+            #    self.target.halt()
+            #    xpsr = self.target.readCoreRegister('xpsr')
+            #    logging.debug("GDB resume xpsr: 0x%X", xpsr)
+            #    # Get IPSR value from XPSR
+            #    if (xpsr & 0x1f) == 3:
+            #        val = "S" + FAULT[3]
+            #        break
+            #    self.target.resume()
         
-        if bpSet:
-            self.target.removeBreakpoint(hardfault_handler)
+        #if bpSet:
+        #    self.target.removeBreakpoint(hardfault_handler)
 
         self.abstract_socket.setBlocking(1)
         return self.createRSPPacket(val), 0, 0
@@ -413,7 +423,7 @@ class GDBServer(threading.Thread):
             
             # reset and stop on reset handler
             self.target.resetStopOnReset()
-            
+
             return self.createRSPPacket("OK")
         
         elif 'Cont' in ops:

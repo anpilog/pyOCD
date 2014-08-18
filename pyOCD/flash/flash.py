@@ -38,7 +38,6 @@ class Flash(object):
         """
         Download the flash algorithm in RAM
         """
-        self.target.halt()
         self.target.setTargetState("PROGRAM")
 
         # download flash algo in RAM

@@ -539,7 +539,10 @@ class CortexM(Target):
         """
         halt the core
         """
+        logging.debug("cortex_m.halt: 0")
+        logging.debug("cortex_m.halt: DHCSR = " + str(self.readMemory(DHCSR)))        
         self.writeMemory(DHCSR, DBGKEY | C_DEBUGEN | C_HALT)
+        logging.debug("cortex_m.halt: 1")
         return
 
     def step(self):
@@ -586,7 +589,6 @@ class CortexM(Target):
 
     def setTargetState(self, state):
         if state == "PROGRAM":
-            self.resetStopOnReset()
             self.writeMemory(DHCSR, DBGKEY | C_DEBUGEN | C_HALT)
             self.writeMemory(DEMCR, VC_CORERESET)
             self.writeMemory(NVIC_AIRCR, NVIC_AIRCR_VECTKEY | NVIC_AIRCR_SYSRESETREQ)

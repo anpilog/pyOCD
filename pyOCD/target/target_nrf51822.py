@@ -17,6 +17,8 @@
 
 from cortex_m import CortexM
 from pyOCD.target.target import TARGET_RUNNING, TARGET_HALTED
+from time import sleep
+import logging
 
 class NRF51822(CortexM):
 
@@ -33,28 +35,35 @@ class NRF51822(CortexM):
         self.auto_increment_page_size = 0x400
     
     def reset(self):
-        # halt processor
-        self.halt()
+        """
+        reset a core. After a call to this function, the core
+        is running
+        """
+        logging.debug("target_nrf518ss.reset: start")
         #Regular reset will kick NRF out of DBG mode
-        #self.writeMemory(0x40000544, 1)
+        logging.debug("target_nrf518ss.reset: enable reset pin")
+        self.writeMemory(0x40000544, 1)
         #reset
-        #CortexM.reset(self)
+        logging.debug("target_nrf518ss.reset: trigger nRST pin")
+        CortexM.reset(self)
         
-        #Soft Reset will keep NRF in debug mode
-        self.writeMemory(0xe000ed0c, 0x05FA0000 | 0x00000004)
+        logging.debug("target_nrf518ss.reset: end")
     
-    def resetStopOnReset(self):        
-        #CortexM.resetStopOnReset(self)
+    def resetStopOnReset(self):
+        """
+        perform a reset and stop the core on the reset handler
+        """
+
         # read address of reset handler
         reset_handler = self.readMemory(4)
-        
-        # reset and halt the target
-        self.reset()
-        self.halt()
-        
+
+        # halt on reset the target
+        CortexM.setTargetState(self, "PROGRAM")        
         # set a breakpoint to the reset handler and reset the target
         self.setBreakpoint(reset_handler)
-        self.reset()
+
+        #Soft Reset will keep NRF in debug mode
+        self.writeMemory(0xe000ed0c, 0x05FA0000 | 0x00000004)
         
         # wait until the bp is reached
         while (self.getState() == TARGET_RUNNING):

@@ -214,10 +214,12 @@ class CMSIS_DAP(Transport):
                 (resp[3] << 24)
 
     def reset(self):
+        logging.debug("cmsis_dap.reset")
         dapSWJPins(self.interface, 0, 'nRESET')
         sleep(0.1)
         dapSWJPins(self.interface, 0x80, 'nRESET')
         sleep(0.1)
+        logging.debug("cmsis_dap.reset exit")
 
     def assertReset(self, asserted):
         if asserted:
