@@ -16,6 +16,13 @@
 """
 
 from flash import Flash
+import logging
+
+NVMC_READY      = 0x4001E400
+NVMC_CONFIG     = 0x4001E504
+NVMC_ERASEPAGE  = 0x4001E508
+NVMC_ERASEALL   = 0x4001E50C
+NVMC_ERASEUIR   = 0x4001E514
 
 flash_algo = { 'load_address' : 0x20000000,
                'instructions' : [
@@ -40,3 +47,39 @@ class Flash_nrf51822(Flash):
     
     def __init__(self, target):
         super(Flash_nrf51822, self).__init__(target, flash_algo)
+
+    def erasePage(self, flashPtr):
+        """
+        Erase one page
+        """
+
+        logging.info("Flash_nrf51822: Erase page: 0x%X", flashPtr)
+        self.target.writeMemory(NVMC_CONFIG, 2)
+        self.target.writeMemory(NVMC_ERASEPAGE, flashPtr)
+
+        while self.target.readMemory(NVMC_READY) == 0:
+            pass
+
+    def programPage(self, flashPtr, bytes):
+        """
+        Program one page
+        """
+
+        logging.info("Flash_nrf51822: program page: 0x%X", flashPtr)
+        
+        self.target.writeMemory(NVMC_CONFIG, 1)
+        while self.target.readMemory(NVMC_READY) == 0:
+            pass
+
+        self.target.writeBlockMemoryUnaligned8(flashPtr, bytes)
+
+        logging.info("Flash_nrf51822: Verify : 0x%X", flashPtr)
+        # Verify
+        bytes_write = self.target.readBlockMemoryUnaligned8(flashPtr, len(bytes))
+        for i in range(len(bytes_write)):
+            if (bytes_write[i] != bytes[i]):
+                logging.info("Write: error@0x%X - 0x%X | 0x%X", flashPtr, bytes[i], bytes_write[i])
+                raise Exception("Verify Error") 
+        
+        
+        logging.info("Write: 0x%X - %d", flashPtr, len(bytes))

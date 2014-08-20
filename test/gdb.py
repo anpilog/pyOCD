@@ -44,6 +44,7 @@ parser.add_option("-b", "--board", dest = "board_id", default = None, help = "Wr
 parser.add_option("-l", "--list", action = "store_true", dest = "list_all", default = False, help = "List all the connected board")
 parser.add_option("-d", "--debug", dest = "debug_level", default = 'info', help = "Set the level of system logging output, the available value for DEBUG_LEVEL: debug, info, warning, error, critical" )
 parser.add_option("-t", "--target", dest = "target_override", default = "nrf51822", help = "Override target to debug" )
+parser.add_option("-s", "--protectsd", dest = "protect_soft_device", default = False, help = "Protect SoftDevice 0x0-0x16000." )
 parser.add_option("-c", "--c_stub", dest = "c_stub", default = None, help = "Unused stub" )
 (option, args) = parser.parse_args()
 
@@ -57,7 +58,7 @@ else:
         board_selected = MbedBoard.chooseBoard(board_id = option.board_id, target_override = option.target_override)
         if board_selected != None:
             try:
-                gdb = GDBServer(board_selected, int(option.port_number))
+                gdb = GDBServer(board_selected, int(option.port_number), option.protect_soft_device)
                 while gdb.isAlive():
                     gdb.join(timeout = 0.5)
             except ValueError:

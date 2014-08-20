@@ -54,7 +54,7 @@ class GDBServer(threading.Thread):
     This class start a GDB server listening a gdb connection on a specific port.
     It implements the RSP (Remote Serial Protocol).
     """
-    def __init__(self, board, port_urlWSS):
+    def __init__(self, board, port_urlWSS, protect_softdevice):
         threading.Thread.__init__(self)
         self.board = board
         self.target = board.target
@@ -66,6 +66,10 @@ class GDBServer(threading.Thread):
             self.wss_server = port_urlWSS
         else:
             self.port = port_urlWSS
+        if protect_softdevice:
+            self.protect_softdevice = True
+        else:
+            self.protect_softdevice = False
         self.packet_size = 2048
         self.flashData = list()
         self.conn = None
@@ -106,6 +110,7 @@ class GDBServer(threading.Thread):
         while True:
             new_command = False
             data = ""
+            logging.debug("Protect SoftDevice: " + str(self.protect_softdevice))
             logging.info('GDB server started at port:%d',self.port)
             
             self.shutdown_event.clear()
@@ -352,7 +357,11 @@ class GDBServer(threading.Thread):
         
         if ops == 'FlashErase':
             self.flash.init()
-            self.flash.eraseAll()
+            if not self.protect_softdevice:
+                self.flash.eraseAll()
+            else:
+                logging.info("Skip FlashErase and preserve SoftDevice")
+
             return self.createRSPPacket("OK")
         
         elif ops == 'FlashWrite':
@@ -371,7 +380,8 @@ class GDBServer(threading.Thread):
             pad_size = write_addr - flash_watermark
             if pad_size > 0:
                 self.flashData += [0xFF] * pad_size
-            
+
+            logging.debug("flash length: 0x%x", len(data[idx_begin:len(data) - 3]) )
             # append the new data if it doesn't overlap existing data
             if write_addr >= flash_watermark:
                 self.flashData += self.unescape(data[idx_begin:len(data) - 3])
@@ -395,9 +405,20 @@ class GDBServer(threading.Thread):
             """
 
             logging.info("flashing %d bytes", bytes_to_be_written)
+            if self.protect_softdevice:
+                logging.info("Skip SoftDevice")
+                flashPtr = 0x16000
+                #bytes_to_be_written = len(self.flashData) - 0x16000
+                self.flashData = self.flashData[flashPtr:]
+                logging.info("application flashing %d bytes", len(self.flashData) - 0x16000)
 
             while len(self.flashData) > 0:
                 size_to_write = min(self.flash.page_size, len(self.flashData))
+                
+                #Erase Page
+                self.flash.erasePage(flashPtr)
+
+                #ProgramPage
                 #if 0 is returned from programPage, security check failed
                 if (self.flash.programPage(flashPtr, self.flashData[:size_to_write]) == 0):
                     logging.error("Protection bits error, flashing has stopped")
