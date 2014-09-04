@@ -614,7 +614,8 @@ class GDBServer(threading.Thread):
             safecmd = {
                 'reset' : ['Reset target', 0x1],
                 'halt'  : ['Halt target', 0x2],
-                'help'  : ['Display this help', 0x4],
+                'resume': ['Resume target', 0x4],
+                'help'  : ['Display this help', 0x80],
             }
             resultMask = 0x00
             if cmd == 'help':
@@ -638,18 +639,27 @@ class GDBServer(threading.Thread):
                     logging.debug(tmp)
                     resp = "OK"
                 else:
-                    #101 for help reset, so output reset cmd help information
+                    #10000001 for help reset, so output reset cmd help information
                     if resultMask == 0x5:
                         resp = 'Reset the target\n'
                         resp = self.hexEncode(resp)
-                    #110 for help halt, so output halt cmd help information
+                    #10000010 for help halt, so output halt cmd help information
                     elif resultMask == 0x6:
                         resp = 'Halt the target\n'
                         resp = self.hexEncode(resp)
-                    #011 for reset halt cmd, so launch self.target.resetStopOnReset()
+                    #10000100 for help resume, so output resume cmd help information
+                    elif resultMask == 0x6:
+                        resp = 'Resume the target\n'
+                        resp = self.hexEncode(resp)
+                    #11 for reset halt cmd, so launch self.target.resetStopOnReset()
                     elif resultMask == 0x3:
                         resp = "OK"
                         self.target.resetStopOnReset()
+                    #111 for reset halt resume cmd, so launch self.target.resetStopOnReset() and self.target.resume()
+                    elif resultMask == 0x7:
+                        resp = "OK"
+                        self.target.resetStopOnReset()
+                        self.target.resume()
                     else:
                         resp = ''
             return self.createRSPPacket(resp)
