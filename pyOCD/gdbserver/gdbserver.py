@@ -416,7 +416,8 @@ class GDBServer(threading.Thread):
                 size_to_write = min(self.flash.page_size, len(self.flashData))
                 
                 #Erase Page
-                self.flash.erasePage(flashPtr)
+                if self.protect_softdevice:
+                    self.flash.erasePage(flashPtr)
 
                 #ProgramPage
                 #if 0 is returned from programPage, security check failed

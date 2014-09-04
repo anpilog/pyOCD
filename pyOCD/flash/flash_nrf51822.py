@@ -40,7 +40,7 @@ flash_algo = { 'load_address' : 0x20000000,
                'begin_data'       : 0x20000200,
                'begin_stack'      : 0x20001000,
                'static_base'      : 0x20000170,
-               'page_size'        : 512
+               'page_size'        : 1024
               };
               
 class Flash_nrf51822(Flash):
@@ -55,6 +55,8 @@ class Flash_nrf51822(Flash):
 
         logging.info("Flash_nrf51822: Erase page: 0x%X", flashPtr)
         self.target.writeMemory(NVMC_CONFIG, 2)
+        while self.target.readMemory(NVMC_READY) == 0:
+            pass
         self.target.writeMemory(NVMC_ERASEPAGE, flashPtr)
 
         while self.target.readMemory(NVMC_READY) == 0:
@@ -76,6 +78,7 @@ class Flash_nrf51822(Flash):
         logging.info("Flash_nrf51822: Verify : 0x%X", flashPtr)
         # Verify
         bytes_write = self.target.readBlockMemoryUnaligned8(flashPtr, len(bytes))
+        logging.info("Flash_nrf51822: Read back : 0x%X", len(bytes_write))
         for i in range(len(bytes_write)):
             if (bytes_write[i] != bytes[i]):
                 logging.info("Write: error@0x%X - 0x%X | 0x%X", flashPtr, bytes[i], bytes_write[i])
