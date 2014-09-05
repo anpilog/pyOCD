@@ -33,6 +33,7 @@ TARGET_TYPE = {
                 "0260": "kl26z",
                 "1010": "lpc1768",
                 "9004": "lpc1768",
+                "9009": "nrf51822",
                 "1040": "lpc11u24",
                 "1050": "lpc800",
                 "1070": "nrf51822",
@@ -95,7 +96,7 @@ class MbedBoard(Board):
                     new_mbed.target_type = target_type
                     new_mbed.unique_id = array.array('B', [i for i in u_id_[2:2+u_id_[1]]]).tostring()
                     logging.info("new board id detected: %s", new_mbed.unique_id)
-                    print "%d => %s" % (index, new_mbed.getInfo().encode('ascii', 'ignore'))
+                    print "%d => %s, board id = %s" % (index, new_mbed.getInfo().encode('ascii', 'ignore'), new_mbed.unique_id)
                     mbed.close()
                     index += 1
                 except Exception as e:
