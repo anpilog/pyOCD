@@ -39,15 +39,15 @@ class NRF51822(CortexM):
         reset a core. After a call to this function, the core
         is running
         """
-        logging.debug("target_nrf518ss.reset: start")
+        logging.debug("target_nrf518.reset: start")
         #Regular reset will kick NRF out of DBG mode
         logging.debug("target_nrf518ss.reset: enable reset pin")
         self.writeMemory(0x40000544, 1)
         #reset
-        logging.debug("target_nrf518ss.reset: trigger nRST pin")
+        logging.debug("target_nrf518.reset: trigger nRST pin")
         CortexM.reset(self)
         
-        logging.debug("target_nrf518ss.reset: end")
+        logging.debug("target_nrf518.reset: end")
     
     def resetStopOnReset(self):
         """
