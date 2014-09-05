@@ -21,6 +21,13 @@ NVMC_ERASEPAGE  = 0x4001E508
 NVMC_ERASEALL   = 0x4001E50C
 NVMC_ERASEUIR   = 0x4001E514
 
+def wcstringToStr(a):
+    b = ""
+    for ch in a:
+        if ord(ch) != 0:
+            b += ch
+    return b
+
 def flashHex(target, filename):
     '''
     flash a hex file to nRF51822
@@ -151,6 +158,8 @@ if __name__ == "__main__":
     parser.add_argument("-b", "--bin", help="a binary file")
     parser.add_argument("-o", "--offset", help="with -b option, a binary will be flashed with an offset (default: 0x16000)")
     parser.add_argument("-s", "--skip", help="with -b option skip first N bytes")
+    parser.add_argument("-id", "--board_id", help="connect to board by board id, use -l to list all connected boards")
+    parser.add_argument("-l", "--list", action="count", help="list all connected boards")
 
     args = parser.parse_args()
     
@@ -159,17 +168,25 @@ if __name__ == "__main__":
     elif args.verbose == 1:
         logging.basicConfig(level=logging.INFO)
     
+    if (args.list):
+        print MbedBoard.listConnectedBoards()
+        sys.exit(0)
+
     adapter = None
     try:
-        interfaces = INTERFACE[usb_backend].getAllConnectedInterface(VID, PID)
-
-        if interfaces == None:
-            print "Not find a mbed interface"
-            sys.exit(1)
+        adapter = None
+        if (args.board_id):
+            adapter = MbedBoard.chooseBoard(board_id = args.board_id)
+        else:
+            interfaces = INTERFACE[usb_backend].getAllConnectedInterface(VID, PID)
+            if interfaces == None:
+                print "Not find a mbed interface"
+                sys.exit(1)
             
-        # Use the first one
-        first_interface = interfaces[0]
-        adapter = MbedBoard("target_nrf51822", "flash_nrf51822", first_interface)
+            # Use the first one
+            first_interface = interfaces[0]
+            adapter = MbedBoard("target_nrf51822", "flash_nrf51822", first_interface)
+
         adapter.init()
         target = adapter.target
         target.halt()
